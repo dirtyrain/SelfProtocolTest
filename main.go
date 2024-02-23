@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/rivo/tview"
@@ -29,13 +28,13 @@ var (
 	sideBar    = newPrimitive("Result")
 
 	appFormArr = [][]FormData{
+		Form0,
 		Form1,
-		Form1,
-		Form1,
-		Form1,
-		Form1,
-		Form1,
-		Form1,
+		Form0,
+		Form0,
+		Form0,
+		Form0,
+		Form0,
 		Form1,
 	}
 
@@ -51,15 +50,15 @@ var (
 		"Tail",
 	}
 
-	appMenuArr = []string{
-		"Get device id",
-		"Set device id",
-		"Get gpio value",
-		"Set gpio value",
-		"Get uart data",
-		"Send uart data",
-		"Get adc value",
-	}
+	// appMenuArr = []string{
+	// 	"Get device id",
+	// 	"Set device id",
+	// 	"Get gpio value",
+	// 	"Set gpio value",
+	// 	"Get uart data",
+	// 	"Send uart data",
+	// 	"Get adc value",
+	// }
 )
 
 func crc16(pData []byte, size int) uint16 {
@@ -145,7 +144,7 @@ func listCMD(formNum int) {
 	for form1ArrI, form1ArrV := range appFormArr[formNum] {
 		if form1ArrI == 9 {
 			form1.AddTextView(form1ArrV.name, form1ArrV.defaultValue, 40, 3, true, false)
-		} else if form1ArrI == 0 || form1ArrI == 7 || form1ArrI == 8 {
+		} else if form1ArrI == 0 || form1ArrI == 1 || form1ArrI == 7 || form1ArrI == 8 {
 			form1.AddTextView(form1ArrV.name, form1ArrV.defaultValue, 0, 1, true, false)
 		} else {
 			form1.AddInputField(form1ArrV.name, form1ArrV.defaultValue, 20, nil, nil)
@@ -157,7 +156,7 @@ func listCMD(formNum int) {
 		var result tview.Primitive
 		var sendStr string
 		for i := 0; i < len(appFormArr[formNum])-3; i++ {
-			if i == 0 {
+			if i == 0 || i == 1 {
 				sendStr += form1.GetFormItem(i).(*tview.TextView).GetText(false)
 			} else {
 				sendStr += form1.GetFormItem(i).(*tview.InputField).GetText()
@@ -169,6 +168,10 @@ func listCMD(formNum int) {
 		if err != nil {
 			errStr = fmt.Sprintf("Error: %s", err.Error())
 		} else {
+			sendStrLen := uint16(len(sendData))
+			sendStrLenStr := fmt.Sprintf("%02x %02x", sendStrLen>>8&0xFF, sendStrLen&0xFF)
+			form1.GetFormItem(1).(*tview.TextView).SetText(sendStrLenStr)
+
 			crcData := crc16(sendData, len(sendData))
 			sendData = append(sendData, byte(crcData>>8&0xFF))
 			sendData = append(sendData, byte(crcData&0xFF))
@@ -235,13 +238,27 @@ func main() {
 	}
 
 	menu = tview.NewList()
-	for i := 1; i <= len(appMenuArr); i++ {
-		title := fmt.Sprintf("List cmd %d", i)
-		menu.AddItem(title, appMenuArr[i-1], rune(strconv.Itoa(i)[0]), func() {
-			listCMD(i - 1)
-		})
-	}
-	menu.AddItem("Quit", "Press to exit", 'q', func() {
+	// for i := 1; i <= len(appMenuArr); i++ {
+	// 	title := fmt.Sprintf("List cmd %d", i)
+	// 	menu.AddItem(title, appMenuArr[i-1], rune(strconv.Itoa(i)[0]), func() {
+	// 		listCMD(i - 1)
+	// 	})
+	// }
+	menu.AddItem("List cmd 0", "Get device id", '0', func() {
+		listCMD(0)
+	}).AddItem("List cmd 1", "Set device id", '1', func() {
+		listCMD(1)
+	}).AddItem("List cmd 2", "Get gpio value", '2', func() {
+		listCMD(2)
+	}).AddItem("List cmd 3", "Set gpio value", '3', func() {
+		listCMD(3)
+	}).AddItem("List cmd 4", "Get uart data", '4', func() {
+		listCMD(4)
+	}).AddItem("List cmd 5", "Send uart data", '5', func() {
+		listCMD(5)
+	}).AddItem("List cmd 6", "Get adc value", '6', func() {
+		listCMD(6)
+	}).AddItem("Quit", "Press to exit", 'q', func() {
 		app.Stop()
 	})
 
