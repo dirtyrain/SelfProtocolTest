@@ -26,12 +26,13 @@ var (
 	resultText *tview.Form
 	mainpage   = newPrimitive("Main content")
 	sideBar    = newPrimitive("Result")
+	footer     = newPrimitive("Uart Log")
 
 	appFormArr = [][]FormData{
 		Form0,
 		Form1,
-		Form0,
-		Form0,
+		Form2,
+		Form3,
 		Form0,
 		Form0,
 		Form0,
@@ -96,6 +97,12 @@ func receiveData(serialPort *serial.Port) {
 
 		if buffer[0] == 0xC1 {
 			recvData = append(recvData, buffer[0])
+			uartStr := ""
+			for _, v := range recvData {
+				uartStr += fmt.Sprintf("%02x ", v)
+			}
+			grid.AddItem(newPrimitive(uartStr), 2, 0, 1, 3, 0, 0, false)
+
 			buffer[0] = 0
 
 			d, err := ProtocolAnalysis(&recvData)
@@ -125,11 +132,14 @@ func receiveData(serialPort *serial.Port) {
 
 			grid.AddItem(resultText, 1, 2, 1, 1, 0, 0, false)
 			app.ForceDraw()
+			recvData = nil
+			recvData = make([]byte, 0, recvMaxLen)
 		} else {
 			if len(recvData) > recvMaxLen {
 				err = errors.New("beyond recv max len")
 				fmt.Println(err)
-				recvData = []byte{0}
+				recvData = nil
+				recvData = make([]byte, 0, recvMaxLen)
 				continue
 			}
 			recvData = append(recvData, buffer[0])
@@ -169,6 +179,8 @@ func listCMD(formNum int) {
 			errStr = fmt.Sprintf("Error: %s", err.Error())
 		} else {
 			sendStrLen := uint16(len(sendData))
+			sendData[1] = byte(sendStrLen >> 8 & 0xFF)
+			sendData[2] = byte(sendStrLen & 0xFF)
 			sendStrLenStr := fmt.Sprintf("%02x %02x", sendStrLen>>8&0xFF, sendStrLen&0xFF)
 			form1.GetFormItem(1).(*tview.TextView).SetText(sendStrLenStr)
 
@@ -177,9 +189,18 @@ func listCMD(formNum int) {
 			sendData = append(sendData, byte(crcData&0xFF))
 			crcDataStr := fmt.Sprintf("%02x %02x", byte(crcData>>8&0xFF), byte(crcData&0xFF))
 			form1.GetFormItem(7).(*tview.TextView).SetText(crcDataStr)
-
 			sendData = append(sendData, 0xC1)
-			sendStr += form1.GetFormItem(8).(*tview.TextView).GetText(false)
+
+			sendStr = ""
+			for i := 0; i < len(appFormArr[formNum])-1; i++ {
+				if i == 0 || i == 1 || i == 7 || i == 8 {
+					sendStr += form1.GetFormItem(i).(*tview.TextView).GetText(false)
+				} else {
+					sendStr += form1.GetFormItem(i).(*tview.InputField).GetText()
+				}
+			}
+			sendStr = strings.ReplaceAll(sendStr, " ", "")
+
 			form1.GetFormItem(9).(*tview.TextView).SetText(sendStr)
 
 			if _, err := serialPort.Write(sendData); err != nil {
@@ -196,7 +217,8 @@ func listCMD(formNum int) {
 			// app.Stop()
 			app.SetFocus(menu)
 			grid.AddItem(mainpage, 1, 1, 1, 1, 0, 0, false).
-				AddItem(sideBar, 1, 2, 1, 1, 0, 0, false)
+				AddItem(sideBar, 1, 2, 1, 1, 0, 0, false).
+				AddItem(footer, 2, 0, 1, 3, 0, 0, false)
 		})
 
 	grid.AddItem(form1, 1, 1, 1, 1, 0, 0, false)
@@ -225,7 +247,7 @@ func main() {
 		SetColumns(30, 0, 0).
 		SetBorders(true).
 		AddItem(newPrimitive(header), 0, 0, 1, 3, 0, 0, false).
-		AddItem(newPrimitive("Footer"), 2, 0, 1, 3, 0, 0, false)
+		AddItem(footer, 2, 0, 1, 3, 0, 0, false)
 
 	resultText = tview.NewForm()
 	for textViewIndex, textViewArrV := range appTextViewArr {
