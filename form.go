@@ -54,4 +54,28 @@ var (
 		{"Tail", "c1"},
 		{"CMD(Hex)", ""},
 	}
+	Form4 = []FormData{
+		{"Header", "c0"},
+		{"Len", "00 00"},
+		{"Type", "01"},
+		{"ID Len", "01"},
+		{"ID", "00"},
+		{"Cmd", "03 00 01 00"},
+		{"Data", "05"},
+		{"CRC", ""},
+		{"Tail", "c1"},
+		{"CMD(Hex)", ""},
+	}
+	Form5 = []FormData{
+		{"Header", "c0"},
+		{"Len", "00 00"},
+		{"Type", "01"},
+		{"ID Len", "01"},
+		{"ID", "00"},
+		{"Cmd", "03 00 02 00"},
+		{"Data", "00"},
+		{"CRC", ""},
+		{"Tail", "c1"},
+		{"CMD(Hex)", ""},
+	}
 )

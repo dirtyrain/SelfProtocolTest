@@ -33,8 +33,8 @@ var (
 		Form1,
 		Form2,
 		Form3,
-		Form0,
-		Form0,
+		Form4,
+		Form5,
 		Form0,
 		Form1,
 	}
